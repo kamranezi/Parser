@@ -1,0 +1,53 @@
+import pandas as pd
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options
+
+# Ваш список ID
+ids = ["IE3286", "IE2769", "GV9073"]
+
+def get_adidas_product_details(url):
+    service = ChromeService(executable_path='C:/Users/Maibenben/PycharmProjects/chromedriver-win64/chromedriver.exe')
+    options = Options()
+    options.headless = True
+    driver = webdriver.Chrome(service=service, options=options)
+
+    try:
+        driver.get(url)
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+        # Извлечение различных типов цен
+        price_element = soup.find('div', class_='gl-price-item notranslate')
+        price_crossed_element = soup.find('div', class_='gl-price-item gl-price-item--crossed notranslate')
+        price_sale_element = soup.find('div', class_='gl-price-item gl-price-item--sale notranslate')
+
+        # Определение цен
+        price = price_element.text.strip() if price_element else "Цена не указана"
+        price_crossed = price_crossed_element.text.strip() if price_crossed_element else None
+        price_sale = price_sale_element.text.strip() if price_sale_element else None
+
+        return {
+            'price': price,
+            'price_crossed': price_crossed,
+            'price_sale': price_sale
+        }
+    finally:
+        driver.quit()
+
+# Сбор данных
+data = {'price': [], 'price_crossed': [], 'price_sale': []}
+for id in ids:
+    url = f'https://www.adidas.com/us/men-adizero-shoes/{id}.html'
+    product_details = get_adidas_product_details(url)
+    data['price'].append(product_details['price'])
+    data['price_crossed'].append(product_details['price_crossed'])
+    data['price_sale'].append(product_details['price_sale'])
+
+# Создание DataFrame
+df = pd.DataFrame(data)
+
+# Сохранение в Excel
+df.to_excel('price2.xlsx', index=False)
+
+print("Данные сохранены в файл 'pri2.xlsx'")

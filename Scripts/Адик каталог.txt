@@ -1,0 +1,67 @@
+import pandas as pd
+from bs4 import BeautifulSoup
+import time
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+
+def get_adidas_page_source(url):
+    webdriver_path = 'C:/Users/Maibenben/PycharmProjects/chromedriver-win64/chromedriver.exe'
+    service = ChromeService(executable_path=webdriver_path)
+    options = Options()
+    options.headless = True
+    driver = webdriver.Chrome(service=service, options=options)
+
+    try:
+        driver.get(url)
+        body = driver.find_element(By.TAG_NAME, 'body')
+        for _ in range(10):
+            body.send_keys(Keys.END)
+            time.sleep(2)
+        page_source = driver.page_source
+    finally:
+        driver.quit()
+
+    return page_source
+
+def parse_adidas_catalog(url):
+    # ... Ваша функция парсинга ...
+    page_source = get_adidas_page_source(url)
+    soup = BeautifulSoup(page_source, 'html5lib')
+
+    products = []
+    product_elements = soup.find_all('div', class_='grid-item', attrs={"data-grid-id": True})
+    for product_element in product_elements:
+        product_id = product_element['data-grid-id']
+        title_element = product_element.find('p', class_='glass-product-card__title')
+        title = title_element.text.strip() if title_element else "Название не указано"
+        category_element = product_element.find('p', class_='glass-product-card__category')
+        category = category_element.text.strip() if category_element else "Категория не указана"
+        price_element = product_element.find('div', class_='gl-price-item gl-price-item--crossed notranslate')
+        price = price_element.text.strip() if price_element else "Цена не указана"
+        photo_element = product_element.find('img', class_='glass-product-card__image')
+        main_photo = photo_element['src'] if photo_element else "Фото не найдено"
+
+        product_info = {
+            'id': product_id,
+            'title': title,
+            'category': category,
+            'price': price,
+            'main_photo': main_photo,
+        }
+        products.append(product_info)
+
+    return products
+
+url = 'https://www.adidas.com/us/men-adizero-shoes?start=96'
+products_info = parse_adidas_catalog(url)
+
+# Создаем DataFrame из списка продуктов
+df = pd.DataFrame(products_info)
+
+# Сохраняем DataFrame в файл Excel
+df.to_excel('aditest.xlsx', index=False)
+
+print("Данные сохранены в файл 'file.xlsx'")

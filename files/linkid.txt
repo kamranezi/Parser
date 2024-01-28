@@ -1,0 +1,52 @@
+# Reload the Excel file to address the new requirements
+df = pd.read_excel('/mnt/data/1.xlsx')
+
+# Ensure 'color_links', 'uid', and 'id' columns exist
+if 'color_links' in df.columns and 'uid' in df.columns and 'id' in df.columns:
+    # Create a dictionary for uid to id mapping
+    uid_to_id_mapping = dict(zip(df['uid'], df['id']))
+
+    # Function to replace uid with id in the 'color_links' column
+    def replace_uid_with_id(link):
+        for uid, id in uid_to_id_mapping.items():
+            link = link.replace(uid, str(id))
+        return link
+
+    # Apply the replacement function to the 'color_links' column
+    df['color_links'] = df['color_links'].apply(replace_uid_with_id)
+
+    # Save the updated DataFrame back to an Excel file
+    updated_excel_file_path = '/mnt/data/1_updated.xlsx'
+    df.to_excel(updated_excel_file_path, index=False)
+    success = True
+else:
+    success = False
+    updated_excel_file_path = ""
+
+updated_excel_file_path, success
+////////////////////////
+# Reload the newly provided Excel file
+new_excel_file_path = '/mnt/data/1_updated (1).xlsx'
+df_new = pd.read_excel(new_excel_file_path)
+
+# Check if 'color_links' column exists
+if 'color_links' in df_new.columns:
+    # Apply the extract_id function to each cell in the 'color_links' column
+    # Assuming each cell contains a list of links as a string
+    def extract_ids_from_links_cell(cell):
+        # Evaluating the string as a list
+        links_list = eval(cell)
+        # Extracting IDs using the previously defined function
+        return [extract_id(link) for link in links_list]
+
+    df_new['color_links'] = df_new['color_links'].apply(extract_ids_from_links_cell)
+
+    # Save the updated DataFrame back to an Excel file
+    final_excel_file_path = '/mnt/data/1_final_updated_ids.xlsx'
+    df_new.to_excel(final_excel_file_path, index=False)
+    success = True
+else:
+    success = False
+    final_excel_file_path = ""
+
+final_excel_file_path, success

@@ -1,0 +1,64 @@
+import pandas as pd
+import ast
+import json
+import re
+
+# Загрузка данных из Excel
+df = pd.read_excel('adidas.true.xlsx')
+
+
+# Функция для безопасного преобразования строки в список
+def safe_eval_list(value):
+    try:
+        # Преобразование строки представления списка в реальный список Python
+        return ast.literal_eval(value)
+    except (ValueError, SyntaxError):
+        # В случае ошибки возвращаем пустой список
+        return []
+
+
+# Функция для извлечения числовой части размеров
+def extract_sizes(sizes_list):
+    # Оставляем только числовую часть размера, игнорируем "M/W"
+    return [float(re.search(r"\d+(\.\d+)?", size).group()) for size in sizes_list if re.search(r"\d+(\.\d+)?", size)]
+
+
+# Функция для преобразования строки DataFrame в нужный формат JSON
+def row_to_json(row):
+    # Ограничиваем количество ссылок до первых четырех
+    image_urls = safe_eval_list(row['image_urls'])[:4]
+
+    # Преобразование цены в целое число
+    price = round(float(row['price'].replace('$', '').replace(',', ''))) + 80
+
+    # Извлечение размеров
+    sizes = extract_sizes(safe_eval_list(row['sizes']))
+    unavailable_sizes = extract_sizes(safe_eval_list(row['unavailable_sizes']))
+
+    return {
+        "male": row['male'],
+        "colors": safe_eval_list(row['colors']),
+        "female": row['female'],
+        "available": row['available'],
+        "brand": row['brand'],
+        "id": row['id'],
+        "title": row['title'],
+        "category": row['category'],
+        "description": row['description'],
+        "imageUrl": row['imageUrl'],
+        "price": price,
+        "image_urls": image_urls,
+        "sizes": sizes,
+        "unavailable_sizes": unavailable_sizes
+    }
+
+
+# Преобразование каждой строки DataFrame в JSON
+json_list = [row_to_json(row) for index, row in df.iterrows()]
+
+# Преобразование списка в JSON
+result_json = json.dumps(json_list, ensure_ascii=False, indent=4)
+
+# Запись JSON в файл
+with open('datafinal.json', 'w', encoding='utf-8') as file:
+    file.write(result_json)
